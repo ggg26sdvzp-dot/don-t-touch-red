@@ -90,6 +90,177 @@
   }
   .hidden { display: none !important; }
 
+  .intro-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .intro-card .title {
+    font-size: 34px;
+  }
+  .intro-sub {
+    color: var(--dim);
+    font-size: 12px;
+    letter-spacing: 3px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .panel {
+    width: min(92vw, 320px);
+    background: rgba(11, 13, 24, 0.72);
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+    border-radius: 20px;
+    padding: 18px 15px;
+    backdrop-filter: blur(6px);
+  }
+
+  .difficulty-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    width: 100%;
+    margin-top: 6px;
+  }
+  .difficulty-btn {
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.03);
+    color: var(--dim);
+    border-radius: 10px;
+    padding: 10px 6px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    font-size: 11px;
+    cursor: pointer;
+  }
+  .difficulty-btn.active {
+    color: var(--white);
+    border-color: rgba(53,214,255,0.85);
+    background: rgba(53,214,255,0.12);
+    box-shadow: 0 0 18px rgba(53,214,255,0.18);
+  }
+
+  .name-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+  }
+  .name-row label {
+    color: var(--dim);
+    font-size: 11px;
+    letter-spacing: 2px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .name-input {
+    flex: 1;
+    max-width: 160px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    color: var(--white);
+    padding: 9px 10px;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .board-list {
+    width: 100%;
+    display: grid;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .board-item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.04);
+    color: var(--white);
+    font-size: 12px;
+    letter-spacing: 1.2px;
+    font-weight: 700;
+  }
+  .board-item .score {
+    color: var(--blue);
+  }
+
+  .menu-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .mini-btn {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--dim);
+    border-radius: 10px;
+    padding: 9px 12px;
+    font-size: 11px;
+    letter-spacing: 2px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .touch-controls {
+    position: absolute;
+    left: 0; right: 0; bottom: max(12px, env(safe-area-inset-bottom));
+    z-index: 7;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 18px;
+    pointer-events: none;
+  }
+  .touch-btn {
+    pointer-events: auto;
+    width: 110px;
+    height: 52px;
+    border: none;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.06);
+    color: var(--white);
+    font-size: 26px;
+    font-weight: 800;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.05), 0 12px 22px rgba(0,0,0,0.28);
+    touch-action: manipulation;
+  }
+  .touch-btn:active {
+    transform: scale(0.97);
+  }
+
+  .pause-box {
+    width: min(92vw, 330px);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 22px 18px;
+    background: rgba(8, 9, 18, 0.84);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 18px;
+    box-shadow: 0 28px 40px rgba(0,0,0,0.38);
+  }
+  .pause-title {
+    color: var(--white);
+    font-size: 20px;
+    letter-spacing: 3px;
+    font-weight: 900;
+  }
+  .pause-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
   .title {
     font-size: 30px;
     font-weight: 800;
@@ -372,6 +543,13 @@
   <div id="wrap">
     <canvas id="game"></canvas>
 
+    <div id="intro" class="overlay">
+      <div class="intro-card fade">
+        <div class="title"><span class="blue">DON'T</span><br><span class="red">TOUCH RED</span></div>
+        <div class="intro-sub">Loading arena</div>
+      </div>
+    </div>
+
     <div id="flash"></div>
 
     <div id="hud" class="hidden">
@@ -380,6 +558,7 @@
         <div id="scoreValue">0</div>
       </div>
       <button id="muteBtn">🔊</button>
+      <button id="pauseBtn" class="mini-btn" aria-label="Pause game">II</button>
       <div id="comboWrap">
         <div id="comboTag">NEAR MISS +5</div>
         <div id="comboMeter"><div id="comboMeterFill"></div></div>
@@ -392,14 +571,51 @@
     </div>
 
     <!-- MENU -->
-    <div id="menu" class="overlay">
-      <div class="title"><span class="blue">DON'T</span><br><span class="red">TOUCH RED</span></div>
-      <div class="orb-icon" id="menuOrb"></div>
-      <div>
-        <div class="best-label">BEST</div>
-        <div class="best-value" id="menuBest">0</div>
+    <div id="menu" class="overlay hidden">
+      <div class="menu-stack">
+        <div class="title"><span class="blue">DON'T</span><br><span class="red">TOUCH RED</span></div>
+        <div class="orb-icon" id="menuOrb"></div>
+        <div>
+          <div class="best-label">BEST</div>
+          <div class="best-value" id="menuBest">0</div>
+        </div>
+
+        <div class="panel">
+          <div class="name-row">
+            <label for="playerNameInput">Player</label>
+            <input id="playerNameInput" class="name-input" maxlength="12" value="PLAYER" />
+          </div>
+          <div class="difficulty-row" id="difficultyRow">
+            <button class="difficulty-btn active" data-difficulty="normal">NORMAL</button>
+            <button class="difficulty-btn" data-difficulty="hard">HARD</button>
+            <button class="difficulty-btn" data-difficulty="insane">INSANE</button>
+          </div>
+        </div>
+
+        <button class="btn" id="playBtn">PLAY</button>
+        <button class="mini-btn" id="leaderboardBtn">LEADERBOARD</button>
       </div>
-      <button class="btn" id="playBtn">PLAY</button>
+    </div>
+
+    <div id="leaderboardPanel" class="overlay hidden">
+      <div class="panel">
+        <div class="best-label">TOP RUNS</div>
+        <div class="board-list" id="boardList"></div>
+        <div style="margin-top: 12px; display: flex; justify-content: center;">
+          <button class="mini-btn" id="leaderboardBackBtn">BACK</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="pause" class="overlay hidden">
+      <div class="pause-box">
+        <div class="pause-title">PAUSED</div>
+        <div class="pause-actions">
+          <button class="btn" id="resumeBtn">RESUME</button>
+          <button class="mini-btn" id="pauseRestartBtn">RESTART</button>
+          <button class="mini-btn" id="pauseHomeBtn">HOME</button>
+        </div>
+      </div>
     </div>
 
     <!-- TUTORIAL / HOW TO PLAY (shown once before the first game) -->
@@ -426,6 +642,11 @@
         <div class="link" id="homeBtn">HOME</div>
       </div>
     </div>
+
+    <div id="touchControls" class="touch-controls hidden">
+      <button class="touch-btn" id="touchLeftBtn" aria-label="Move left">◀</button>
+      <button class="touch-btn" id="touchRightBtn" aria-label="Move right">▶</button>
+    </div>
   </div>
 </div>
 
@@ -436,8 +657,10 @@
   const wrap = document.getElementById('wrap');
 
   const menuEl = document.getElementById('menu');
+  const introEl = document.getElementById('intro');
   const tutorialEl = document.getElementById('tutorial');
   const gameoverEl = document.getElementById('gameover');
+  const pauseEl = document.getElementById('pause');
   const hudEl = document.getElementById('hud');
   const scoreValueEl = document.getElementById('scoreValue');
   const comboWrapEl = document.getElementById('comboWrap');
@@ -451,6 +674,19 @@
   const goNearMissEl = document.getElementById('goNearMiss');
   const goMaxComboEl = document.getElementById('goMaxCombo');
   const playBtn = document.getElementById('playBtn');
+  const leaderboardBtn = document.getElementById('leaderboardBtn');
+  const leaderboardBackBtn = document.getElementById('leaderboardBackBtn');
+  const leaderboardPanelEl = document.getElementById('leaderboardPanel');
+  const boardListEl = document.getElementById('boardList');
+  const playerNameInput = document.getElementById('playerNameInput');
+  const difficultyButtons = [...document.querySelectorAll('.difficulty-btn')];
+  const pauseBtn = document.getElementById('pauseBtn');
+  const resumeBtn = document.getElementById('resumeBtn');
+  const pauseRestartBtn = document.getElementById('pauseRestartBtn');
+  const pauseHomeBtn = document.getElementById('pauseHomeBtn');
+  const touchControlsEl = document.getElementById('touchControls');
+  const touchLeftBtn = document.getElementById('touchLeftBtn');
+  const touchRightBtn = document.getElementById('touchRightBtn');
   const tutStartBtn = document.getElementById('tutStartBtn');
   const retryBtn = document.getElementById('retryBtn');
   const homeBtn = document.getElementById('homeBtn');
@@ -530,15 +766,72 @@
   window.addEventListener('resize', resize);
   resize();
 
-  // ---------- persistent high score ----------
-  // NOTE: switched from the Claude-artifact `window.storage` API to plain
-  // localStorage so this works as a normal static site (GitHub Pages,
-  // Netlify, Cloudflare Pages, etc). Inside Claude.ai's inline preview,
-  // localStorage may not persist across reloads — that's expected; once
-  // you host this file yourself it will work normally in any browser.
+  // ----- AUDIO NOTES ----------------------------------------------------
+  // Add your own audio files to a folder named "sounds" next to this file.
+  // You can replace the placeholder files with your own versions whenever you want.
+  // Example files to add:
+  //   sounds/switch.mp3      - short blip for direction switch
+  //   sounds/nearmiss.mp3    - short satisfying chime for near-miss
+  //   sounds/combo.mp3       - stronger jingle for higher combos
+  //   sounds/death.mp3       - impact / game over sound
+  //   sounds/highscore.mp3   - celebratory win fanfare
+  //   sounds/powerup.mp3     - pickup confirmation
+  //   sounds/shield.mp3      - shield activation sound
+  //   sounds/menu.mp3        - menu ambience / intro chime
+  //   sounds/ambient-loop.mp3 - subtle looping background mood
+  // ---------------------------------------------------------------------
+
   const HS_KEY = 'dontTouchRed:highScore';
+  const LEADERBOARD_KEY = 'dontTouchRed:leaderboard';
   const TUT_KEY = 'dontTouchRed:tutorialSeen';
+  const SETTINGS_KEY = 'dontTouchRed:settings';
+  const PLAYER_KEY = 'dontTouchRed:playerName';
+  const DIFFICULTY_KEY = 'dontTouchRed:difficulty';
   let bestScore = 0;
+  let leaderboard = [];
+  let difficulty = 'normal';
+
+  function loadSettings() {
+    try {
+      const stored = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+      if (stored.playerName) playerNameInput.value = stored.playerName;
+      if (stored.difficulty) difficulty = stored.difficulty;
+    } catch (e) {
+      difficulty = 'normal';
+    }
+
+    try {
+      const storedName = localStorage.getItem(PLAYER_KEY);
+      if (storedName) playerNameInput.value = storedName;
+    } catch (e) {}
+
+    try {
+      const storedDifficulty = localStorage.getItem(DIFFICULTY_KEY);
+      if (storedDifficulty) difficulty = storedDifficulty;
+    } catch (e) {}
+
+    setDifficulty(difficulty, false);
+  }
+
+  function saveSettings() {
+    try {
+      localStorage.setItem(PLAYER_KEY, playerNameInput.value.trim() || 'PLAYER');
+      localStorage.setItem(DIFFICULTY_KEY, difficulty);
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+        playerName: playerNameInput.value.trim() || 'PLAYER',
+        difficulty
+      }));
+    } catch (e) { /* silent fail */ }
+  }
+
+  function setDifficulty(next, persist = true) {
+    difficulty = ['normal', 'hard', 'insane'].includes(next) ? next : 'normal';
+    difficultyButtons.forEach((button) => {
+      const active = button.dataset.difficulty === difficulty;
+      button.classList.toggle('active', active);
+    });
+    if (persist) saveSettings();
+  }
 
   function loadBest() {
     try {
@@ -555,6 +848,43 @@
     try {
       localStorage.setItem(HS_KEY, String(v));
     } catch (e) { /* ignore, best-effort */ }
+  }
+
+  function loadLeaderboard() {
+    try {
+      leaderboard = JSON.parse(localStorage.getItem(LEADERBOARD_KEY) || '[]');
+    } catch (e) {
+      leaderboard = [];
+    }
+    if (!Array.isArray(leaderboard)) leaderboard = [];
+    renderLeaderboard();
+  }
+
+  function saveLeaderboardEntry(name, score) {
+    const item = { name: (name || 'PLAYER').slice(0, 12), score: Math.max(0, Math.floor(score)) };
+    leaderboard.push(item);
+    leaderboard = leaderboard
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 6);
+    try {
+      localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(leaderboard));
+    } catch (e) { /* fail silently */ }
+    renderLeaderboard();
+  }
+
+  function renderLeaderboard() {
+    boardListEl.innerHTML = '';
+    if (!leaderboard.length) {
+      boardListEl.innerHTML = '<div class="board-item"><span>NO RUNS YET</span><span class="score">0</span></div>';
+      return;
+    }
+
+    leaderboard.forEach((entry, index) => {
+      const item = document.createElement('div');
+      item.className = 'board-item';
+      item.innerHTML = `<span>#${index + 1} ${entry.name}</span><span class="score">${entry.score}</span>`;
+      boardListEl.appendChild(item);
+    });
   }
 
   // ---------- color progression ----------
@@ -591,6 +921,14 @@
   let comboCount, comboTimer, comboBestThisRun, nearMissCount;
   let lastTime;
   let rafId = null;
+  let isPaused = false;
+  let lastIntroTimer = 0;
+
+  function difficultyMultiplier() {
+    if (difficulty === 'hard') return 1.25;
+    if (difficulty === 'insane') return 1.6;
+    return 1;
+  }
 
   // =========================================================================
   // POWER-UPS
@@ -607,7 +945,9 @@
     { id: 'shield', icon: '🛡', hue: 195, duration: 0 },
     { id: 'slow',   icon: '⏱', hue: 265, duration: 3 },
     { id: 'score2x',icon: '2×', hue: 45,  duration: 5 },
-    { id: 'dash',   icon: '💨', hue: 165, duration: 1.2 }
+    { id: 'dash',   icon: '💨', hue: 165, duration: 1.2 },
+    { id: 'magnet', icon: '🧲', hue: 310, duration: 4.5 },
+    { id: 'freeze', icon: '❄', hue: 200, duration: 2.4 }
   ];
   const POWERUP_MIN_INTERVAL = 9;
   const POWERUP_MAX_INTERVAL = 15;
@@ -617,6 +957,8 @@
   let slowMoTimer = 0;
   let scoreMultTimer = 0;
   let dashTimer = 0;
+  let magnetTimer = 0;
+  let freezeTimer = 0;
 
   function spawnPowerup() {
     const type = POWERUP_TYPES[Math.floor(Math.random() * POWERUP_TYPES.length)];
@@ -646,6 +988,12 @@
         break;
       case 'dash':
         dashTimer = Math.max(dashTimer, type.duration);
+        break;
+      case 'magnet':
+        magnetTimer = Math.max(magnetTimer, type.duration);
+        break;
+      case 'freeze':
+        freezeTimer = Math.max(freezeTimer, type.duration);
         break;
     }
   }
@@ -695,6 +1043,8 @@
     slowMoTimer = 0;
     scoreMultTimer = 0;
     dashTimer = 0;
+    magnetTimer = 0;
+    freezeTimer = 0;
     lastTime = null;
   }
 
@@ -702,6 +1052,7 @@
   // Tuned so the first obstacle actually reaches the player around score ~45-55
   // instead of ~70+ (it was previously too slow to fall, not too slow to spawn).
   function getDifficulty(t) {
+    const mod = difficultyMultiplier();
     let fallSpeed, spawnInterval, gapMin, gapMax, horizontalDrift;
     if (t < 8) {
       fallSpeed = 170; spawnInterval = 1.5; gapMin = 150; gapMax = 210; horizontalDrift = 0;
@@ -716,7 +1067,13 @@
       spawnInterval = Math.max(0.5, 0.75 - (t - 50) * 0.003);
       gapMin = 80; gapMax = 115; horizontalDrift = 0.7;
     }
-    return { fallSpeed, spawnInterval, gapMin, gapMax, horizontalDrift };
+    return {
+      fallSpeed: fallSpeed * mod,
+      spawnInterval: Math.max(0.42, spawnInterval / mod),
+      gapMin: gapMin / mod,
+      gapMax: gapMax / mod,
+      horizontalDrift: horizontalDrift + (difficulty === 'insane' ? 0.12 : difficulty === 'hard' ? 0.06 : 0)
+    };
   }
 
   const BLOCK_H = 26;
@@ -919,6 +1276,14 @@
     }
   }
 
+  function vibrate(pattern) {
+    if (navigator.vibrate) {
+      try {
+        navigator.vibrate(pattern);
+      } catch (e) { /* ignore */ }
+    }
+  }
+
   function endGame() {
     state = STATE.OVER;
     cancelAnimationFrame(rafId);
@@ -930,6 +1295,7 @@
     triggerShake(10, 0.3);
     spawnParticles(player.x, player.y, 350, 26, 220);
     playSfx('death');
+    vibrate([20, 40, 60]);
 
     const finalScore = Math.floor(score);
     finalScoreEl.textContent = finalScore;
@@ -945,6 +1311,9 @@
     } else {
       newHighTagEl.classList.add('hidden');
     }
+
+    const runnerName = (playerNameInput.value || 'PLAYER').trim().slice(0, 12) || 'PLAYER';
+    saveLeaderboardEntry(runnerName, finalScore);
     setMenuOrbColor(Math.max(bestScore, finalScore));
 
     // give the death particles/shake a beat before covering the screen
@@ -962,6 +1331,8 @@
     if (slowMoTimer > 0) slowMoTimer = Math.max(0, slowMoTimer - dt);
     if (scoreMultTimer > 0) scoreMultTimer = Math.max(0, scoreMultTimer - dt);
     if (dashTimer > 0) dashTimer = Math.max(0, dashTimer - dt);
+    if (magnetTimer > 0) magnetTimer = Math.max(0, magnetTimer - dt);
+    if (freezeTimer > 0) freezeTimer = Math.max(0, freezeTimer - dt);
 
     const scoreMult = scoreMultTimer > 0 ? 2 : 1;
     score += dt * 10 * scoreMult; // ~10 points per second of survival (doubled by 2x Score)
@@ -1028,10 +1399,24 @@
       p.vy *= 0.92;
     }
 
+    if (magnetTimer > 0) {
+      for (const p of powerups) {
+        const pullX = player.x - p.x;
+        const pullY = player.y - p.y;
+        const distSq = pullX * pullX + pullY * pullY;
+        if (distSq > 0 && distSq < 220000) {
+          const dist = Math.sqrt(distSq) || 1;
+          p.x += (pullX / dist) * 80 * dt;
+          p.y += (pullY / dist) * 80 * dt;
+        }
+      }
+    }
+
     // move + collect power-ups
     for (let i = obstacles.length - 1; i >= 0; i--) {
       const o = obstacles[i];
-      o.y += fallSpeed * dt; // global fall speed (+ Slow Motion) — see pushRow() note
+      const adjustedFall = freezeTimer > 0 ? fallSpeed * 0.45 : fallSpeed;
+      o.y += adjustedFall * dt; // global fall speed (+ Slow Motion) — see pushRow() note
       if (o.vx) {
         o.x += o.vx * dt;
         if (o.x < 0) { o.x = 0; o.vx *= -1; }
@@ -1103,7 +1488,8 @@
       // base fall (slightly slower than obstacles, easier to react to) plus
       // any leftover bounce velocity from hitting an obstacle
       p.x += p.bounceVX * dt;
-      p.y += (fallSpeed * 0.85 + p.bounceVY) * dt;
+      const pickupFall = freezeTimer > 0 ? (fallSpeed * 0.85) * 0.5 : fallSpeed * 0.85;
+      p.y += (pickupFall + p.bounceVY) * dt;
       p.x = Math.max(p.r, Math.min(W - p.r, p.x)); // keep it on screen after a side bounce
 
       // resolve collisions against every current obstacle (circle vs rect,
@@ -1283,6 +1669,8 @@
     if (slowMoTimer > 0) active.push({ icon: '⏱', frac: slowMoTimer / 3 });
     if (scoreMultTimer > 0) active.push({ icon: '2×', frac: scoreMultTimer / 5 });
     if (dashTimer > 0) active.push({ icon: '💨', frac: dashTimer / 1.2 });
+    if (magnetTimer > 0) active.push({ icon: '🧲', frac: magnetTimer / 4.5 });
+    if (freezeTimer > 0) active.push({ icon: '❄', frac: freezeTimer / 2.4 });
     if (!active.length) return;
 
     ctx.save();
@@ -1321,7 +1709,7 @@
   }
 
   function loop(ts) {
-    if (state !== STATE.PLAYING) return;
+    if (state !== STATE.PLAYING || isPaused) return;
     if (lastTime == null) lastTime = ts;
     let dt = (ts - lastTime) / 1000;
     lastTime = ts;
@@ -1348,15 +1736,21 @@
   }
 
   function beginPlaying() {
+    saveSettings();
     resize();
     resetGame();
+    isPaused = false;
     state = STATE.PLAYING;
+    pauseEl.classList.add('hidden');
     menuEl.classList.add('hidden');
     tutorialEl.classList.add('hidden');
     gameoverEl.classList.add('hidden');
+    leaderboardPanelEl.classList.add('hidden');
     hudEl.classList.remove('hidden');
+    touchControlsEl.classList.remove('hidden');
     scoreValueEl.textContent = '0';
     comboWrapEl.classList.remove('show');
+    lastTime = null;
     rafId = requestAnimationFrame(loop);
   }
 
@@ -1372,21 +1766,41 @@
     }
   }
 
+  function showMenu() {
+    state = STATE.MENU;
+    cancelAnimationFrame(rafId);
+    hudEl.classList.add('hidden');
+    touchControlsEl.classList.add('hidden');
+    pauseEl.classList.add('hidden');
+    tutorialEl.classList.add('hidden');
+    gameoverEl.classList.add('hidden');
+    leaderboardPanelEl.classList.add('hidden');
+    menuEl.classList.remove('hidden');
+    menuBestEl.textContent = bestScore;
+    setMenuOrbColor(bestScore);
+    ctx.clearRect(0, 0, W, H);
+  }
+
   function handleTutorialStart() {
     localStorage.setItem(TUT_KEY, '1');
     beginPlaying();
   }
 
   function goHome() {
-    state = STATE.MENU;
-    cancelAnimationFrame(rafId);
-    gameoverEl.classList.add('hidden');
-    tutorialEl.classList.add('hidden');
-    hudEl.classList.add('hidden');
-    menuEl.classList.remove('hidden');
-    menuBestEl.textContent = bestScore;
-    setMenuOrbColor(bestScore);
-    ctx.clearRect(0, 0, W, H);
+    showMenu();
+  }
+
+  function togglePause() {
+    if (state !== STATE.PLAYING) return;
+    isPaused = !isPaused;
+    if (isPaused) {
+      pauseEl.classList.remove('hidden');
+      cancelAnimationFrame(rafId);
+    } else {
+      pauseEl.classList.add('hidden');
+      lastTime = null;
+      rafId = requestAnimationFrame(loop);
+    }
   }
 
   // ---------- input ----------
@@ -1400,19 +1814,67 @@
 
   canvas.addEventListener('pointerdown', (e) => {
     e.preventDefault();
-    toggleDirection();
+    if (state === STATE.PLAYING && !isPaused) toggleDirection();
   });
   canvas.addEventListener('touchstart', () => {
-    toggleDirection();
+    if (state === STATE.PLAYING && !isPaused) toggleDirection();
   }, { passive: true });
+
+  difficultyButtons.forEach((button) => {
+    button.addEventListener('click', () => setDifficulty(button.dataset.difficulty));
+  });
+
+  playerNameInput.addEventListener('change', saveSettings);
+  leaderboardBtn.addEventListener('click', () => {
+    menuEl.classList.add('hidden');
+    leaderboardPanelEl.classList.remove('hidden');
+  });
+  leaderboardBackBtn.addEventListener('click', () => {
+    leaderboardPanelEl.classList.add('hidden');
+    menuEl.classList.remove('hidden');
+  });
+
+  pauseBtn.addEventListener('click', togglePause);
+  resumeBtn.addEventListener('click', togglePause);
+  pauseRestartBtn.addEventListener('click', () => {
+    pauseEl.classList.add('hidden');
+    beginPlaying();
+  });
+  pauseHomeBtn.addEventListener('click', () => {
+    pauseEl.classList.add('hidden');
+    goHome();
+  });
+
+  touchLeftBtn.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    if (state === STATE.PLAYING && !isPaused) direction = -1;
+  });
+  touchRightBtn.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    if (state === STATE.PLAYING && !isPaused) direction = 1;
+  });
 
   playBtn.addEventListener('click', handlePlayPressed);
   tutStartBtn.addEventListener('click', handleTutorialStart);
   retryBtn.addEventListener('click', beginPlaying); // retry always skips the tutorial
   homeBtn.addEventListener('click', goHome);
 
+  window.addEventListener('keydown', (event) => {
+    if (event.code === 'Escape' && state === STATE.PLAYING) {
+      togglePause();
+    }
+    if (event.code === 'Space' && state === STATE.PLAYING) {
+      event.preventDefault();
+      toggleDirection();
+    }
+  });
+
   // ---------- init ----------
   loadBest();
+  loadLeaderboard();
+  loadSettings();
+  showMenu();
+  introEl.classList.add('hidden');
   ctx.clearRect(0, 0, W, H);
 })();
 </script>
