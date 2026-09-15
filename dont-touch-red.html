@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Don't Touch Red</title>
+<style>
+  :root {
+    --bg: #0a0a12;
+    --bg2: #0d0d18;
+    --blue: #35d6ff;
+    --blue-glow: rgba(53, 214, 255, 0.55);
+    --red: #ff3b5c;
+    --red-glow: rgba(255, 59, 92, 0.55);
+    --white: #f4f6fb;
+    --dim: #5b6172;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    touch-action: none;
+  }
+
+  /* ---------- stage: lets desktop show a framed card instead of a bare full-bleed canvas ---------- */
+  #stage {
+    height: 100vh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+  }
+  #desktopTitle {
+    display: none;
+    color: var(--white);
+    font-weight: 800;
+    letter-spacing: 4px;
+    font-size: 22px;
+    margin-bottom: 18px;
+  }
+  #desktopTitle .red { color: var(--red); text-shadow: 0 0 16px var(--red-glow); }
+  #desktopTitle .blue { color: var(--blue); text-shadow: 0 0 16px var(--blue-glow); }
+
+  #wrap {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    max-width: 480px;
+    margin: 0 auto;
+    background: radial-gradient(circle at 50% 20%, var(--bg2), var(--bg) 70%);
+    overflow: hidden;
+  }
+
+  /* Desktop: show the phone-sized game as a glowing framed card instead of edge-to-edge */
+  @media (min-width: 700px) {
+    #stage {
+      background: radial-gradient(circle at 50% 40%, #11131f, #05050a 75%);
+    }
+    #desktopTitle { display: block; }
+    #wrap {
+      height: 82vh;
+      max-height: 780px;
+      border-radius: 22px;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 0 60px rgba(53,214,255,0.18), 0 30px 60px rgba(0,0,0,0.6);
+    }
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+  }
+
+  .overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    text-align: center;
+    z-index: 5;
+    padding: 20px;
+  }
+  .hidden { display: none !important; }
+
+  .title {
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: var(--white);
+    line-height: 1.2;
+  }
+  .title .red { color: var(--red); text-shadow: 0 0 18px var(--red-glow); }
+  .title .blue { color: var(--blue); text-shadow: 0 0 18px var(--blue-glow); }
+
+  .orb-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #cfeffb, var(--blue) 60%, #0a90ad 100%);
+    box-shadow: 0 0 22px 4px var(--blue-glow);
+  }
+
+  .best-label {
+    color: var(--dim);
+    font-size: 13px;
+    letter-spacing: 3px;
+    font-weight: 700;
+  }
+  .best-value {
+    color: var(--white);
+    font-size: 15px;
+    letter-spacing: 3px;
+    font-weight: 700;
+    margin-top: 2px;
+  }
+
+  .btn {
+    padding: 16px 52px;
+    border-radius: 14px;
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    border: none;
+    cursor: pointer;
+    background: linear-gradient(180deg, #45e0ff, #16b8e0);
+    color: #041016;
+    box-shadow: 0 0 24px var(--blue-glow), 0 6px 0 #0c7f9c;
+    transition: transform 0.05s ease;
+  }
+  .btn:active { transform: translateY(4px); box-shadow: 0 0 24px var(--blue-glow), 0 2px 0 #0c7f9c; }
+
+  .subrow {
+    display: flex;
+    gap: 26px;
+    margin-top: 6px;
+  }
+  .link {
+    color: var(--dim);
+    font-size: 13px;
+    letter-spacing: 2px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  /* color picker */
+  #skinGrid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+    max-width: 280px;
+  }
+  .swatch-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+  }
+  .swatch-dot {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    box-sizing: border-box;
+    border: 2px solid transparent;
+    transition: transform 0.1s ease, border-color 0.1s ease;
+  }
+  .swatch-btn.selected .swatch-dot {
+    border-color: var(--white);
+    transform: scale(1.08);
+  }
+  .swatch-label {
+    color: var(--dim);
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    font-weight: 700;
+  }
+  .swatch-btn.selected .swatch-label { color: var(--white); }
+
+  .gameover-score {
+    font-size: 52px;
+    font-weight: 800;
+    color: var(--white);
+  }
+  .gameover-tag {
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: var(--dim);
+  }
+  .newhigh {
+    color: var(--blue);
+    text-shadow: 0 0 14px var(--blue-glow);
+  }
+
+  /* stat grid on the game-over screen */
+  .stats {
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: 4px 24px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+  }
+  .stats .k { color: var(--dim); text-align: left; }
+  .stats .v { color: var(--white); text-align: right; }
+
+  /* HUD */
+  #hud {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 18px 20px 0;
+    z-index: 3;
+    font-weight: 800;
+    letter-spacing: 2px;
+  }
+  #scoreLabel { color: var(--dim); font-size: 11px; }
+  #scoreValue { color: var(--white); font-size: 26px; margin-top: 2px; }
+
+  #comboWrap {
+    text-align: right;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+  #comboWrap.show { opacity: 1; }
+  #comboTag {
+    color: var(--blue);
+    font-size: 15px;
+    text-shadow: 0 0 10px var(--blue-glow);
+  }
+  #comboMeter {
+    width: 90px;
+    height: 5px;
+    background: rgba(255,255,255,0.12);
+    border-radius: 3px;
+    margin-top: 5px;
+    overflow: hidden;
+    margin-left: auto;
+  }
+  #comboMeterFill {
+    height: 100%;
+    width: 100%;
+    background: var(--blue);
+    box-shadow: 0 0 8px var(--blue-glow);
+    transform-origin: right;
+  }
+
+  #muteBtn {
+    pointer-events: auto;
+    position: absolute;
+    top: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255,255,255,0.06);
+    border: none;
+    border-radius: 8px;
+    color: var(--dim);
+    font-size: 15px;
+    padding: 6px 10px;
+    cursor: pointer;
+    z-index: 4;
+  }
+
+  /* milestone banner ("10 SECONDS / SPEED UP") */
+  #milestone {
+    position: absolute;
+    top: 40%;
+    left: 0; right: 0;
+    text-align: center;
+    z-index: 4;
+    pointer-events: none;
+    opacity: 0;
+  }
+  #milestone .m-time {
+    color: var(--dim);
+    font-size: 13px;
+    letter-spacing: 3px;
+    font-weight: 700;
+  }
+  #milestone .m-text {
+    color: var(--white);
+    font-size: 30px;
+    letter-spacing: 3px;
+    font-weight: 800;
+    text-shadow: 0 0 18px var(--blue-glow);
+  }
+  #milestone.show {
+    animation: milestonePop 1.6s ease forwards;
+  }
+  @keyframes milestonePop {
+    0%   { opacity: 0; transform: translateY(10px) scale(0.96); }
+    15%  { opacity: 1; transform: translateY(0) scale(1); }
+    75%  { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-6px) scale(1.02); }
+  }
+
+  /* death flash */
+  #flash {
+    position: absolute;
+    inset: 0;
+    background: var(--red);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 6;
+  }
+  #flash.hit {
+    animation: flashFade 0.4s ease forwards;
+  }
+  @keyframes flashFade {
+    0% { opacity: 0.55; }
+    100% { opacity: 0; }
+  }
+
+  /* tutorial screen */
+  .tut-demo {
+    position: relative;
+    width: 140px;
+    height: 60px;
+  }
+  .tut-orb {
+    position: absolute;
+    top: 50%;
+    width: 22px;
+    height: 22px;
+    margin-top: -11px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #cfeffb, var(--blue) 60%, #0a90ad 100%);
+    box-shadow: 0 0 16px 3px var(--blue-glow);
+    animation: tutMove 1.8s ease-in-out infinite;
+  }
+  @keyframes tutMove {
+    0%   { left: 0; }
+    50%  { left: calc(100% - 22px); }
+    100% { left: 0; }
+  }
+  .tut-line {
+    font-size: 14px;
+    color: var(--dim);
+    font-weight: 700;
+    letter-spacing: 1px;
+    max-width: 260px;
+    line-height: 1.5;
+  }
+  .tut-line b { color: var(--white); }
+  .tut-line .red { color: var(--red); }
+
+  .fade {
+    animation: fadeIn 0.25s ease;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="desktopTitle"><span class="blue">DON'T</span> <span class="red">TOUCH RED</span></div>
+  <div id="wrap">
+    <canvas id="game"></canvas>
+
+    <div id="flash"></div>
+
+    <div id="hud" class="hidden">
+      <div>
+        <div id="scoreLabel">SCORE</div>
+        <div id="scoreValue">0</div>
+      </div>
+      <button id="muteBtn">🔊</button>
+      <div id="comboWrap">
+        <div id="comboTag">NEAR MISS +5</div>
+        <div id="comboMeter"><div id="comboMeterFill"></div></div>
+      </div>
+    </div>
+
+    <div id="milestone">
+      <div class="m-time" id="milestoneTime"></div>
+      <div class="m-text" id="milestoneText"></div>
+    </div>
+
+    <!-- MENU -->
+    <div id="menu" class="overlay">
+      <div class="title"><span class="blue">DON'T</span><br><span class="red">TOUCH RED</span></div>
+      <div class="orb-icon" id="menuOrb"></div>
+      <div>
+        <div class="best-label">BEST</div>
+        <div class="best-value" id="menuBest">0</div>
+      </div>
+      <button class="btn" id="playBtn">PLAY</button>
+    </div>
+
+    <!-- TUTORIAL / HOW TO PLAY (shown once before the first game) -->
+    <div id="tutorial" class="overlay hidden">
+      <div class="tut-line"><b>TAP TO SWITCH SIDES</b></div>
+      <div class="tut-demo"><div class="tut-orb"></div></div>
+      <div class="tut-line">Survive as long as you can.<br>Don't touch <span class="red">red</span>.</div>
+      <button class="btn" id="tutStartBtn">TAP TO START</button>
+    </div>
+
+    <!-- GAME OVER -->
+    <div id="gameover" class="overlay hidden">
+      <div class="gameover-tag">GAME OVER</div>
+      <div class="gameover-score" id="finalScore">0</div>
+      <div class="gameover-tag newhigh hidden" id="newHighTag">NEW HIGH SCORE!</div>
+      <div class="stats">
+        <div class="k">BEST</div><div class="v" id="goBest">0</div>
+        <div class="k">TIME</div><div class="v" id="goTime">0.0s</div>
+        <div class="k">NEAR MISSES</div><div class="v" id="goNearMiss">0</div>
+        <div class="k">MAX COMBO</div><div class="v" id="goMaxCombo">×0</div>
+      </div>
+      <button class="btn" id="retryBtn">TRY AGAIN</button>
+      <div class="subrow">
+        <div class="link" id="homeBtn">HOME</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const wrap = document.getElementById('wrap');
+
+  const menuEl = document.getElementById('menu');
+  const tutorialEl = document.getElementById('tutorial');
+  const gameoverEl = document.getElementById('gameover');
+  const hudEl = document.getElementById('hud');
+  const scoreValueEl = document.getElementById('scoreValue');
+  const comboWrapEl = document.getElementById('comboWrap');
+  const comboTagEl = document.getElementById('comboTag');
+  const comboMeterFillEl = document.getElementById('comboMeterFill');
+  const finalScoreEl = document.getElementById('finalScore');
+  const newHighTagEl = document.getElementById('newHighTag');
+  const menuBestEl = document.getElementById('menuBest');
+  const goBestEl = document.getElementById('goBest');
+  const goTimeEl = document.getElementById('goTime');
+  const goNearMissEl = document.getElementById('goNearMiss');
+  const goMaxComboEl = document.getElementById('goMaxCombo');
+  const playBtn = document.getElementById('playBtn');
+  const tutStartBtn = document.getElementById('tutStartBtn');
+  const retryBtn = document.getElementById('retryBtn');
+  const homeBtn = document.getElementById('homeBtn');
+  const menuOrbEl = document.getElementById('menuOrb');
+  const muteBtn = document.getElementById('muteBtn');
+  const flashEl = document.getElementById('flash');
+  const milestoneEl = document.getElementById('milestone');
+  const milestoneTimeEl = document.getElementById('milestoneTime');
+  const milestoneTextEl = document.getElementById('milestoneText');
+
+  // =========================================================================
+  // SOUND — drop your own files in and these just start working.
+  //
+  // Create a folder named "sounds" next to this HTML file and add:
+  //   sounds/switch.mp3     – short blip when the orb switches direction
+  //   sounds/nearmiss.mp3   – satisfying "whoosh/ding" for a near miss
+  //   sounds/combo.mp3      – slightly bigger sound for combo x2 and up
+  //   sounds/death.mp3      – impact sound on collision / game over
+  //   sounds/highscore.mp3  – celebratory sound for a new best score
+  //   sounds/powerup.mp3    – picking up any power-up
+  //   sounds/shield.mp3     – shield absorbing a hit instead of you dying
+  //
+  // Any file you don't add is simply skipped (no errors, no console spam).
+  // The mute button (top of the HUD) is wired up automatically and its
+  // on/off state is remembered between visits via localStorage.
+  // =========================================================================
+  const SFX_FILES = {
+    switchDir: 'sounds/switch.mp3',
+    nearMiss:  'sounds/nearmiss.mp3',
+    combo:     'sounds/combo.mp3',
+    death:     'sounds/death.mp3',
+    highScore: 'sounds/highscore.mp3',
+    powerup:   'sounds/powerup.mp3',
+    shield:    'sounds/shield.mp3'
+  };
+  const sfx = {};
+  Object.keys(SFX_FILES).forEach((key) => {
+    const a = new Audio(SFX_FILES[key]);
+    a.preload = 'auto';
+    a.volume = 0.55;
+    // Swallow load errors silently — file just hasn't been added yet.
+    a.addEventListener('error', () => { sfx[key] = null; }, { once: true });
+    sfx[key] = a;
+  });
+  let muted = localStorage.getItem('dontTouchRed:muted') === '1';
+  function updateMuteBtn() { muteBtn.textContent = muted ? '🔇' : '🔊'; }
+  updateMuteBtn();
+  muteBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    muted = !muted;
+    localStorage.setItem('dontTouchRed:muted', muted ? '1' : '0');
+    updateMuteBtn();
+  });
+  // Call this anywhere you want a sound: playSfx('nearMiss'), playSfx('death'), etc.
+  function playSfx(key) {
+    if (muted) return;
+    const a = sfx[key];
+    if (!a) return; // file missing — no-op
+    try {
+      const node = a.cloneNode(); // clone so overlapping plays don't cut each other off
+      node.volume = a.volume;
+      node.play().catch(() => {}); // browsers may block audio before first user gesture
+    } catch (e) { /* ignore */ }
+  }
+
+  // ---------- sizing ----------
+  let W, H, DPR;
+  function resize() {
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    const rect = wrap.getBoundingClientRect();
+    W = rect.width;
+    H = rect.height;
+    canvas.width = Math.floor(W * DPR);
+    canvas.height = Math.floor(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // ---------- persistent high score ----------
+  // NOTE: switched from the Claude-artifact `window.storage` API to plain
+  // localStorage so this works as a normal static site (GitHub Pages,
+  // Netlify, Cloudflare Pages, etc). Inside Claude.ai's inline preview,
+  // localStorage may not persist across reloads — that's expected; once
+  // you host this file yourself it will work normally in any browser.
+  const HS_KEY = 'dontTouchRed:highScore';
+  const TUT_KEY = 'dontTouchRed:tutorialSeen';
+  let bestScore = 0;
+
+  function loadBest() {
+    try {
+      bestScore = parseInt(localStorage.getItem(HS_KEY), 10) || 0;
+    } catch (e) {
+      bestScore = 0;
+    }
+    menuBestEl.textContent = bestScore;
+    setMenuOrbColor(bestScore);
+  }
+
+  function saveBest(v) {
+    bestScore = v;
+    try {
+      localStorage.setItem(HS_KEY, String(v));
+    } catch (e) { /* ignore, best-effort */ }
+  }
+
+  // ---------- color progression ----------
+  // Hue drifts through the spectrum the farther you get, starting from blue (~195).
+  function hueForScore(s) {
+    return (195 + s * 0.5) % 360;
+  }
+  function orbCssGradient(hue) {
+    return `radial-gradient(circle at 35% 30%, #eafcff, hsl(${hue},90%,62%) 55%, hsl(${hue},85%,32%) 100%)`;
+  }
+  function orbGlow(hue) {
+    return `0 0 22px 4px hsla(${hue},90%,62%,0.55)`;
+  }
+  function setMenuOrbColor(score) {
+    const hue = hueForScore(score);
+    menuOrbEl.style.background = orbCssGradient(hue);
+    menuOrbEl.style.boxShadow = orbGlow(hue);
+  }
+
+  // ---------- game state ----------
+  const STATE = { MENU: 'menu', TUTORIAL: 'tutorial', PLAYING: 'playing', OVER: 'over' };
+  let state = STATE.MENU;
+
+  const PLAYER_R = 13;          // visual radius (drawing only)
+  const HIT_R = PLAYER_R * 0.72; // actual collision radius — smaller than the glow
+                                 // so the hitbox matches what it visually *feels*
+                                 // like you should be able to survive (fixes the
+                                 // "I didn't touch that" hitbox complaint).
+  const OBSTACLE_HIT_INSET = 3;  // shrink obstacle hitboxes a few px so rounded
+                                 // corners don't count as a hit before the red
+                                 // actually reaches the orb visually.
+
+  let player, obstacles, elapsed, spawnTimer, score, direction;
+  let comboCount, comboTimer, comboBestThisRun, nearMissCount;
+  let lastTime;
+  let rafId = null;
+
+  // =========================================================================
+  // POWER-UPS
+  // Small blue/neutral icons fall alongside the red obstacles (never red —
+  // red always means danger). Touching one applies its effect immediately.
+  //   🛡 Shield      — absorbs the next hit instead of ending the run
+  //   ⏱ Slow Motion — halves obstacle fall speed for 3s
+  //   2× Score      — doubles all scoring for 5s
+  //   💨 Dash        — 1.2s burst of much faster side-to-side movement
+  // Kept rare on purpose (see POWERUP_MIN/MAX_INTERVAL) so they stay a treat,
+  // not a crutch.
+  // =========================================================================
+  const POWERUP_TYPES = [
+    { id: 'shield', icon: '🛡', hue: 195, duration: 0 },
+    { id: 'slow',   icon: '⏱', hue: 265, duration: 3 },
+    { id: 'score2x',icon: '2×', hue: 45,  duration: 5 },
+    { id: 'dash',   icon: '💨', hue: 165, duration: 1.2 }
+  ];
+  const POWERUP_MIN_INTERVAL = 9;
+  const POWERUP_MAX_INTERVAL = 15;
+  let powerups = [];          // falling pickups currently on screen
+  let powerupSpawnTimer = 0;
+  let shieldActive = false;
+  let slowMoTimer = 0;
+  let scoreMultTimer = 0;
+  let dashTimer = 0;
+
+  function spawnPowerup() {
+    const type = POWERUP_TYPES[Math.floor(Math.random() * POWERUP_TYPES.length)];
+    powerups.push({
+      x: 20 + Math.random() * (W - 40),
+      y: -20,
+      r: 14,
+      type,
+      bounceVX: 0,  // extra velocity from bouncing off obstacles (decays over time)
+      bounceVY: 0,
+      slideDir: 0   // which way it slides after landing on top of a wall
+    });
+  }
+
+  function applyPowerup(type) {
+    playSfx('powerup');
+    spawnParticles(player.x, player.y, type.hue, 16, 130);
+    switch (type.id) {
+      case 'shield':
+        shieldActive = true;
+        break;
+      case 'slow':
+        slowMoTimer = Math.max(slowMoTimer, type.duration);
+        break;
+      case 'score2x':
+        scoreMultTimer = Math.max(scoreMultTimer, type.duration);
+        break;
+      case 'dash':
+        dashTimer = Math.max(dashTimer, type.duration);
+        break;
+    }
+  }
+
+
+  // particles + trail + camera shake (purely cosmetic, no gameplay impact)
+  let particles = [];
+  let trail = [];
+  let shakeTime = 0, shakeMag = 0;
+
+  // difficulty milestone call-outs
+  const MILESTONES = [
+    { t: 8,  time: '8 SECONDS',  text: 'SPEED UP' },
+    { t: 18, time: '18 SECONDS', text: 'WATCH OUT' },
+    { t: 32, time: '32 SECONDS', text: 'CHAOS' },
+    { t: 50, time: '50 SECONDS', text: 'INSANE MODE' }
+  ];
+  let milestoneIndex = 0;
+  let milestoneTimer = 0;
+
+  function resetGame() {
+    player = {
+      x: W / 2,
+      y: H - 90,
+      r: PLAYER_R,
+      speed: 260 // px per second horizontal
+    };
+    direction = 0; // 0 = not moved yet, -1 left, 1 right
+    obstacles = [];
+    elapsed = 0;
+    spawnTimer = 0;
+    score = 0;
+    comboCount = 0;
+    comboTimer = 0;
+    comboBestThisRun = 0;
+    nearMissCount = 0;
+    particles = [];
+    trail = [];
+    shakeTime = 0; shakeMag = 0;
+    milestoneIndex = 0;
+    milestoneTimer = 0;
+    patternState = { altSide: 1, shrinkStep: 0, shrinkX: null, zigzagX: null, zigzagDir: 1, forceNext: null };
+    waveState = { active: false, timer: 0, number: 0, nextAt: 30 + Math.random() * 15 };
+    powerups = [];
+    powerupSpawnTimer = POWERUP_MIN_INTERVAL + Math.random() * (POWERUP_MAX_INTERVAL - POWERUP_MIN_INTERVAL);
+    shieldActive = false;
+    slowMoTimer = 0;
+    scoreMultTimer = 0;
+    dashTimer = 0;
+    lastTime = null;
+  }
+
+  // difficulty curve based on elapsed seconds
+  // Tuned so the first obstacle actually reaches the player around score ~45-55
+  // instead of ~70+ (it was previously too slow to fall, not too slow to spawn).
+  function getDifficulty(t) {
+    let fallSpeed, spawnInterval, gapMin, gapMax, horizontalDrift;
+    if (t < 8) {
+      fallSpeed = 170; spawnInterval = 1.5; gapMin = 150; gapMax = 210; horizontalDrift = 0;
+    } else if (t < 18) {
+      fallSpeed = 200; spawnInterval = 1.2; gapMin = 120; gapMax = 170; horizontalDrift = 0;
+    } else if (t < 32) {
+      fallSpeed = 225; spawnInterval = 1.0; gapMin = 100; gapMax = 150; horizontalDrift = 0.15;
+    } else if (t < 50) {
+      fallSpeed = 255; spawnInterval = 0.8; gapMin = 90; gapMax = 130; horizontalDrift = 0.45;
+    } else {
+      fallSpeed = 280 + Math.min(80, (t - 50) * 1.5);
+      spawnInterval = Math.max(0.5, 0.75 - (t - 50) * 0.003);
+      gapMin = 80; gapMax = 115; horizontalDrift = 0.7;
+    }
+    return { fallSpeed, spawnInterval, gapMin, gapMax, horizontalDrift };
+  }
+
+  const BLOCK_H = 26;
+
+  // Shared block-pusher: given a list of "solid" x-ranges (walls) for this
+  // row, push one obstacle per wall. Used by every pattern below so gap
+  // math only has to be right in one place.
+  function pushRow(walls, diff, driftChance) {
+    const drift = driftChance != null ? driftChance : diff.horizontalDrift;
+    // NOTE: obstacles don't store their own fall speed — update() moves every
+    // obstacle at the *current* global fall speed each frame. This is what
+    // fixes the "overlapping wall" bug: without it, a later (faster) row
+    // could catch up to an earlier (slower) one still on screen and the two
+    // would overlap, sometimes blocking every gap at once.
+    for (const w of walls) {
+      if (w.w <= 4) continue;
+      obstacles.push({
+        x: w.x, y: -BLOCK_H, w: w.w, h: BLOCK_H,
+        vx: (Math.random() < drift) ? (Math.random() < 0.5 ? -40 : 40) : 0,
+        grazed: false
+      });
+    }
+  }
+
+  // ---- individual obstacle patterns -----------------------------------
+  // Each pattern computes wall rectangles for a single row and calls
+  // pushRow(). Patterns that need to remember state between spawns (an
+  // alternating side, a shrinking gap, a moving zig-zag) read/write
+  // `patternState`, which persists for the whole run.
+
+  function patternSingle(diff) {
+    const gap = diff.gapMin + Math.random() * (diff.gapMax - diff.gapMin);
+    const gapX = Math.random() * (W - gap);
+    pushRow([{ x: 0, w: gapX }, { x: gapX + gap, w: W - (gapX + gap) }], diff);
+  }
+
+  // Two small gaps instead of one — three walls, two slits to pick between.
+  function patternDouble(diff) {
+    const gap = Math.max(70, diff.gapMin * 0.72);
+    const a = Math.random() * (W * 0.5 - gap);
+    const b = W * 0.5 + Math.random() * (W * 0.5 - gap - 10) + 10;
+    pushRow([
+      { x: 0, w: a },
+      { x: a + gap, w: b - (a + gap) },
+      { x: b + gap, w: W - (b + gap) }
+    ], diff);
+  }
+
+  // Gap pinned hard to one side, flipping sides each time this pattern fires.
+  function patternAlternating(diff) {
+    const gap = diff.gapMin;
+    patternState.altSide *= -1;
+    const gapX = patternState.altSide < 0 ? 6 : W - gap - 6;
+    pushRow([{ x: 0, w: gapX }, { x: gapX + gap, w: W - (gapX + gap) }], diff, 0);
+  }
+
+  // Gap shrinks a little more each row, then snaps back to wide and repeats —
+  // forces the player to react instead of camping one spot.
+  function patternShrinking(diff) {
+    const steps = 4;
+    patternState.shrinkStep = (patternState.shrinkStep + 1) % steps;
+    const wide = diff.gapMax;
+    const narrow = Math.max(65, diff.gapMin * 0.6);
+    const gap = wide - (wide - narrow) * (patternState.shrinkStep / (steps - 1));
+    const gapX = patternState.shrinkX != null
+      ? Math.max(0, Math.min(W - gap, patternState.shrinkX))
+      : Math.random() * (W - gap);
+    patternState.shrinkX = gapX; // keep it roughly centered in place as it shrinks
+    pushRow([{ x: 0, w: gapX }, { x: gapX + gap, w: W - (gapX + gap) }], diff, 0);
+  }
+
+  // Gap drifts steadily left/right across consecutive rows, bouncing at the
+  // walls — a diagonal path rather than a straight one.
+  function patternZigzag(diff) {
+    const gap = Math.max(90, diff.gapMin * 0.85);
+    if (patternState.zigzagX == null) patternState.zigzagX = W / 2 - gap / 2;
+    const step = 70;
+    patternState.zigzagX += patternState.zigzagDir * step;
+    if (patternState.zigzagX <= 0) { patternState.zigzagX = 0; patternState.zigzagDir = 1; }
+    if (patternState.zigzagX + gap >= W) { patternState.zigzagX = W - gap; patternState.zigzagDir = -1; }
+    const gapX = patternState.zigzagX;
+    pushRow([{ x: 0, w: gapX }, { x: gapX + gap, w: W - (gapX + gap) }], diff, 0);
+  }
+
+  // A very wide wall (tiny gap) immediately followed by a very narrow wall
+  // (huge gap) — a tense squeeze followed by a breather.
+  function patternWideThenNarrow(diff) {
+    const tinyGap = 72;
+    const gapX = Math.random() * (W - tinyGap);
+    pushRow([{ x: 0, w: gapX }, { x: gapX + tinyGap, w: W - (gapX + tinyGap) }], diff, 0);
+    patternState.forceNext = 'narrowWall';
+  }
+  function patternNarrowWall(diff) {
+    const hugeGap = W * 0.62;
+    const gapX = Math.random() * (W - hugeGap);
+    pushRow([{ x: 0, w: gapX }, { x: gapX + hugeGap, w: W - (gapX + hugeGap) }], diff, 0);
+  }
+
+  const PATTERNS = {
+    single: patternSingle,
+    double: patternDouble,
+    alternating: patternAlternating,
+    shrinking: patternShrinking,
+    zigzag: patternZigzag,
+    wideThenNarrow: patternWideThenNarrow
+  };
+
+  // Which patterns are available at each stage, matching the existing
+  // difficulty tiers (Level 1 warm-up -> Level 5 chaos from the spec).
+  // 'single' is repeated in earlier pools to weight it more heavily.
+  function patternPoolFor(t) {
+    if (t < 8)  return ['single', 'single', 'single'];
+    if (t < 18) return ['single', 'single', 'double'];
+    if (t < 32) return ['single', 'double', 'double', 'alternating'];
+    if (t < 50) return ['double', 'alternating', 'shrinking', 'zigzag'];
+    return ['double', 'alternating', 'shrinking', 'zigzag', 'zigzag', 'wideThenNarrow'];
+  }
+
+  let patternState = { altSide: 1, shrinkStep: 0, shrinkX: null, zigzagX: null, zigzagDir: 1, forceNext: null };
+
+  function spawnPatternRow(diff, forcedPool) {
+    // A wide-then-narrow pair forces the very next row regardless of pool.
+    if (patternState.forceNext === 'narrowWall') {
+      patternState.forceNext = null;
+      patternNarrowWall(diff);
+      return;
+    }
+    const pool = forcedPool || patternPoolFor(elapsed);
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    (PATTERNS[pick] || patternSingle)(diff);
+  }
+
+  // ---- wave sections ----------------------------------------------------
+  // Every 30-45s, a short "WAVE N / SURVIVE" section runs a harder, more
+  // focused pattern at a faster spawn rate before handing back to the
+  // normal random mix.
+  const WAVE_DURATION = 7;
+  const WAVE_POOL = ['zigzag', 'shrinking', 'alternating', 'double'];
+  let waveState = { active: false, timer: 0, number: 0, nextAt: 30 + Math.random() * 15 };
+
+  function maybeStartWave() {
+    if (waveState.active) return;
+    if (elapsed < waveState.nextAt) return;
+    waveState.active = true;
+    waveState.timer = WAVE_DURATION;
+    waveState.number += 1;
+    milestoneTimeEl.textContent = 'WAVE ' + waveState.number;
+    milestoneTextEl.textContent = 'SURVIVE';
+    milestoneEl.classList.remove('show');
+    void milestoneEl.offsetWidth;
+    milestoneEl.classList.add('show');
+  }
+
+
+  function showCombo(text) {
+    comboTagEl.textContent = text;
+    comboWrapEl.classList.add('show');
+    comboMeterFillEl.style.transition = 'none';
+    comboMeterFillEl.style.transform = 'scaleX(1)';
+    // restart the drain animation
+    requestAnimationFrame(() => {
+      comboMeterFillEl.style.transition = `transform ${COMBO_WINDOW}s linear`;
+      comboMeterFillEl.style.transform = 'scaleX(0)';
+    });
+    comboTimer = COMBO_WINDOW;
+  }
+  const COMBO_WINDOW = 1.3; // seconds a combo stays alive between near-misses
+
+  function spawnParticles(x, y, hue, count, speed) {
+    for (let i = 0; i < count; i++) {
+      const ang = Math.random() * Math.PI * 2;
+      const spd = speed * (0.4 + Math.random() * 0.6);
+      particles.push({
+        x, y,
+        vx: Math.cos(ang) * spd,
+        vy: Math.sin(ang) * spd,
+        life: 0.5 + Math.random() * 0.3,
+        maxLife: 0.5 + Math.random() * 0.3,
+        hue,
+        r: 1.5 + Math.random() * 2
+      });
+    }
+  }
+
+  function triggerShake(mag, dur) {
+    shakeMag = Math.max(shakeMag, mag);
+    shakeTime = Math.max(shakeTime, dur);
+  }
+
+  function checkMilestones() {
+    if (milestoneIndex >= MILESTONES.length) return;
+    const next = MILESTONES[milestoneIndex];
+    if (elapsed >= next.t) {
+      milestoneTimeEl.textContent = next.time;
+      milestoneTextEl.textContent = next.text;
+      milestoneEl.classList.remove('show');
+      void milestoneEl.offsetWidth;
+      milestoneEl.classList.add('show');
+      milestoneIndex++;
+    }
+  }
+
+  function endGame() {
+    state = STATE.OVER;
+    cancelAnimationFrame(rafId);
+
+    // death polish: red screen flash + big shake + red particle burst
+    flashEl.classList.remove('hit');
+    void flashEl.offsetWidth;
+    flashEl.classList.add('hit');
+    triggerShake(10, 0.3);
+    spawnParticles(player.x, player.y, 350, 26, 220);
+    playSfx('death');
+
+    const finalScore = Math.floor(score);
+    finalScoreEl.textContent = finalScore;
+    goBestEl.textContent = Math.max(bestScore, finalScore);
+    goTimeEl.textContent = elapsed.toFixed(1) + 's';
+    goNearMissEl.textContent = nearMissCount;
+    goMaxComboEl.textContent = '×' + comboBestThisRun;
+
+    if (finalScore > bestScore) {
+      newHighTagEl.classList.remove('hidden');
+      saveBest(finalScore);
+      playSfx('highScore');
+    } else {
+      newHighTagEl.classList.add('hidden');
+    }
+    setMenuOrbColor(Math.max(bestScore, finalScore));
+
+    // give the death particles/shake a beat before covering the screen
+    setTimeout(() => {
+      hudEl.classList.add('hidden');
+      gameoverEl.classList.remove('hidden');
+      gameoverEl.classList.add('fade');
+    }, 260);
+  }
+
+  function update(dt) {
+    elapsed += dt;
+
+    // tick power-up timers down
+    if (slowMoTimer > 0) slowMoTimer = Math.max(0, slowMoTimer - dt);
+    if (scoreMultTimer > 0) scoreMultTimer = Math.max(0, scoreMultTimer - dt);
+    if (dashTimer > 0) dashTimer = Math.max(0, dashTimer - dt);
+
+    const scoreMult = scoreMultTimer > 0 ? 2 : 1;
+    score += dt * 10 * scoreMult; // ~10 points per second of survival (doubled by 2x Score)
+
+    // move player — Dash temporarily boosts side-to-side speed
+    const effectiveSpeed = player.speed * (dashTimer > 0 ? 2.4 : 1);
+    player.x += direction * effectiveSpeed * dt;
+    player.x = Math.max(player.r, Math.min(W - player.r, player.x));
+
+    // trail (behind the orb)
+    trail.push({ x: player.x, y: player.y });
+    if (trail.length > 14) trail.shift();
+
+    const diff = getDifficulty(elapsed);
+    const fallSpeed = diff.fallSpeed * (slowMoTimer > 0 ? 0.5 : 1); // Slow Motion halves this
+    checkMilestones();
+    maybeStartWave();
+
+    if (waveState.active) {
+      waveState.timer -= dt;
+      if (waveState.timer <= 0) waveState.active = false;
+      if (!waveState.active) {
+        // wave just ended — schedule the next one and cool down the spawn rate
+        waveState.nextAt = elapsed + 30 + Math.random() * 15;
+      }
+    }
+
+    spawnTimer -= dt;
+    if (spawnTimer <= 0) {
+      if (waveState.active) {
+        // waves spawn faster and pull only from the harder pool
+        spawnPatternRow(diff, WAVE_POOL);
+        spawnTimer = Math.max(0.55, diff.spawnInterval * 0.7);
+      } else {
+        spawnPatternRow(diff);
+        spawnTimer = diff.spawnInterval;
+      }
+    }
+
+    powerupSpawnTimer -= dt;
+    if (powerupSpawnTimer <= 0) {
+      spawnPowerup();
+      powerupSpawnTimer = POWERUP_MIN_INTERVAL + Math.random() * (POWERUP_MAX_INTERVAL - POWERUP_MIN_INTERVAL);
+    }
+
+    if (comboTimer > 0) {
+      comboTimer -= dt;
+      if (comboTimer <= 0) {
+        comboWrapEl.classList.remove('show');
+        comboCount = 0;
+      }
+    }
+
+    if (shakeTime > 0) shakeTime -= dt;
+
+    // update particles
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.life -= dt;
+      if (p.life <= 0) { particles.splice(i, 1); continue; }
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vx *= 0.92;
+      p.vy *= 0.92;
+    }
+
+    // move + collect power-ups
+    for (let i = obstacles.length - 1; i >= 0; i--) {
+      const o = obstacles[i];
+      o.y += fallSpeed * dt; // global fall speed (+ Slow Motion) — see pushRow() note
+      if (o.vx) {
+        o.x += o.vx * dt;
+        if (o.x < 0) { o.x = 0; o.vx *= -1; }
+        if (o.x + o.w > W) { o.x = W - o.w; o.vx *= -1; }
+      }
+
+      // --- collision (forgiving hitboxes) ---
+      // Player hitbox is smaller than the drawn/glowing orb (HIT_R < player.r),
+      // and the obstacle hitbox is inset a few px from its drawn edges, so a
+      // near-graze that *looks* like a touch still counts as a survive.
+      const hx = o.x + OBSTACLE_HIT_INSET;
+      const hy = o.y + OBSTACLE_HIT_INSET;
+      const hw = Math.max(0, o.w - OBSTACLE_HIT_INSET * 2);
+      const hh = Math.max(0, o.h - OBSTACLE_HIT_INSET * 2);
+      const closestX = Math.max(hx, Math.min(player.x, hx + hw));
+      const closestY = Math.max(hy, Math.min(player.y, hy + hh));
+      const dx = player.x - closestX;
+      const dy = player.y - closestY;
+      const distSq = dx * dx + dy * dy;
+
+      if (distSq < HIT_R * HIT_R) {
+        if (shieldActive) {
+          // Shield absorbs this hit: remove the obstacle, consume the
+          // shield, give feedback, and keep playing instead of dying.
+          shieldActive = false;
+          obstacles.splice(i, 1);
+          spawnParticles(player.x, player.y, 195, 20, 160);
+          triggerShake(6, 0.2);
+          playSfx('shield');
+          continue;
+        }
+        endGame();
+        return;
+      }
+
+      // near-miss check (uses the full visual radius, not the tighter hitbox)
+      const nearR = player.r + 16;
+      if (!o.grazed && distSq < nearR * nearR) {
+        o.grazed = true;
+        comboCount++;
+        comboBestThisRun = Math.max(comboBestThisRun, comboCount);
+        nearMissCount++;
+        // scoring: flat +5 for a lone near miss, then the combo itself is
+        // worth progressively more (x2 -> +10, x3 -> +15, x4 -> +20, ...)
+        // doubled on top of that while 2x Score is active.
+        const bonus = (5 + (comboCount > 1 ? comboCount * 5 : 0)) * scoreMult;
+        score += bonus;
+        spawnParticles(player.x, player.y, hueForScore(score), 10, 90);
+        triggerShake(4, 0.15);
+        if (comboCount > 1) {
+          showCombo('×' + comboCount + ' COMBO  +' + bonus);
+          playSfx('combo');
+        } else {
+          showCombo('NEAR MISS +' + bonus);
+          playSfx('nearMiss');
+        }
+      }
+
+      if (o.y > H + 40) {
+        obstacles.splice(i, 1);
+      }
+    }
+
+    // Power-ups now have simple physics: falling onto a red obstacle bounces
+    // them off its top/side instead of letting them clip straight through.
+    for (let i = powerups.length - 1; i >= 0; i--) {
+      const p = powerups[i];
+
+      // base fall (slightly slower than obstacles, easier to react to) plus
+      // any leftover bounce velocity from hitting an obstacle
+      p.x += p.bounceVX * dt;
+      p.y += (fallSpeed * 0.85 + p.bounceVY) * dt;
+      p.x = Math.max(p.r, Math.min(W - p.r, p.x)); // keep it on screen after a side bounce
+
+      // resolve collisions against every current obstacle (circle vs rect,
+      // same closest-point technique used for the player)
+      for (const o of obstacles) {
+        const closestX = Math.max(o.x, Math.min(p.x, o.x + o.w));
+        const closestY = Math.max(o.y, Math.min(p.y, o.y + o.h));
+        const dx = p.x - closestX;
+        const dy = p.y - closestY;
+        const distSq = dx * dx + dy * dy;
+        if (distSq >= p.r * p.r) continue;
+
+        let dist = Math.sqrt(distSq);
+        let nx, ny;
+        if (dist < 0.001) {
+          // center landed exactly on/inside the obstacle — push straight up
+          nx = 0; ny = -1; dist = 0.001;
+        } else {
+          nx = dx / dist; ny = dy / dist;
+        }
+        // push the pickup back out to the obstacle's surface
+        const overlap = p.r - dist;
+        p.x += nx * overlap;
+        p.y += ny * overlap;
+
+        if (ny < -0.5) {
+          // landed on TOP of the obstacle — small upward bounce plus a
+          // sideways nudge so it slides toward a gap instead of sitting
+          // there bouncing in place forever
+          p.bounceVY = -110;
+          if (!p.slideDir) p.slideDir = Math.random() < 0.5 ? -1 : 1;
+          p.bounceVX = p.slideDir * 70;
+        } else if (Math.abs(nx) > 0.5) {
+          // clipped the side edge of a wall — bounce sideways away from it
+          p.bounceVX = nx * 90;
+          p.slideDir = nx > 0 ? 1 : -1;
+        } else {
+          // hit from underneath (rare — a wall drifting into it) — push down/away
+          p.bounceVY = Math.max(p.bounceVY, 40);
+        }
+      }
+
+      // damping so bounces settle instead of oscillating forever
+      p.bounceVX *= 0.9;
+      p.bounceVY *= 0.9;
+
+      const dx = player.x - p.x, dy = player.y - p.y;
+      if (dx * dx + dy * dy < (player.r + p.r) * (player.r + p.r)) {
+        applyPowerup(p.type);
+        powerups.splice(i, 1);
+        continue;
+      }
+      if (p.y > H + 40) powerups.splice(i, 1);
+    }
+
+    scoreValueEl.textContent = Math.floor(score);
+  }
+
+  // ---------- drawing ----------
+  let gridOffset = 0;
+
+  function drawBackground(dt) {
+    ctx.clearRect(0, 0, W, H);
+
+    // subtle background hue drift as difficulty rises, so the arena itself
+    // feels like it's escalating, not just the obstacles
+    const diff = getDifficulty(elapsed);
+    const bgHue = 220 - Math.min(40, elapsed * 0.4); // drifts from blue-violet toward blue-red
+    ctx.fillStyle = `hsl(${bgHue}, 45%, 5%)`;
+    ctx.fillRect(0, 0, W, H);
+
+    // moving grid — gives a sense of speed/forward motion
+    gridOffset = (gridOffset + diff.fallSpeed * (dt || 0)) % 40;
+    ctx.strokeStyle = 'rgba(255,255,255,0.045)';
+    ctx.lineWidth = 1;
+    for (let y = -40 + gridOffset; y < H + 40; y += 40) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(W, y);
+      ctx.stroke();
+    }
+    for (let x = 0; x < W; x += 40) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, H);
+      ctx.stroke();
+    }
+  }
+
+  function drawTrail() {
+    for (let i = 0; i < trail.length; i++) {
+      const t = trail[i];
+      const p = i / trail.length; // 0 = oldest, 1 = newest
+      const hue = hueForScore(score);
+      ctx.beginPath();
+      ctx.fillStyle = `hsla(${hue}, 90%, 62%, ${p * 0.25})`;
+      ctx.arc(t.x, t.y, player.r * 0.7 * p, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function drawParticles() {
+    for (const p of particles) {
+      const a = Math.max(0, p.life / p.maxLife);
+      ctx.beginPath();
+      ctx.fillStyle = `hsla(${p.hue}, 90%, 62%, ${a})`;
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function drawPlayer() {
+    const hue = hueForScore(score);
+    ctx.save();
+    ctx.shadowColor = `hsla(${hue},90%,62%,0.9)`;
+    ctx.shadowBlur = 22;
+    const grad = ctx.createRadialGradient(
+      player.x - 4, player.y - 5, 2,
+      player.x, player.y, player.r
+    );
+    grad.addColorStop(0, '#eafcff');
+    grad.addColorStop(0.5, `hsl(${hue},90%,62%)`);
+    grad.addColorStop(1, `hsl(${hue},85%,32%)`);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(player.x, player.y, player.r, 0, Math.PI * 2);
+    ctx.fill();
+    if (shieldActive) {
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = 'rgba(53,214,255,0.9)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(player.x, player.y, player.r + 6, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawObstacles() {
+    ctx.save();
+    ctx.shadowColor = 'rgba(255,59,92,0.85)';
+    ctx.shadowBlur = 16;
+    for (const o of obstacles) {
+      const grad = ctx.createLinearGradient(o.x, o.y, o.x, o.y + o.h);
+      grad.addColorStop(0, '#ff6b85');
+      grad.addColorStop(1, '#e21d42');
+      ctx.fillStyle = grad;
+      roundRect(ctx, o.x, o.y, o.w, o.h, 6);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawPowerups() {
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '16px -apple-system, sans-serif';
+    for (const p of powerups) {
+      ctx.shadowColor = `hsla(${p.type.hue},90%,65%,0.9)`;
+      ctx.shadowBlur = 14;
+      ctx.fillStyle = `hsla(${p.type.hue},80%,60%,0.25)`;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#f4f6fb';
+      ctx.fillText(p.type.icon, p.x, p.y + 1);
+    }
+    ctx.restore();
+  }
+
+  function drawActiveEffects() {
+    // small row of active power-up badges under the score
+    const active = [];
+    if (shieldActive) active.push({ icon: '🛡', frac: 1 });
+    if (slowMoTimer > 0) active.push({ icon: '⏱', frac: slowMoTimer / 3 });
+    if (scoreMultTimer > 0) active.push({ icon: '2×', frac: scoreMultTimer / 5 });
+    if (dashTimer > 0) active.push({ icon: '💨', frac: dashTimer / 1.2 });
+    if (!active.length) return;
+
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '13px -apple-system, sans-serif';
+    let x = 24;
+    const y = 76;
+    for (const eff of active) {
+      ctx.fillStyle = 'rgba(255,255,255,0.08)';
+      ctx.beginPath();
+      ctx.arc(x, y, 14, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(53,214,255,0.8)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(x, y, 14, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * eff.frac);
+      ctx.stroke();
+      ctx.fillStyle = '#f4f6fb';
+      ctx.fillText(eff.icon, x, y + 1);
+      x += 34;
+    }
+    ctx.restore();
+  }
+
+  function roundRect(c, x, y, w, h, r) {
+    if (w < 2 * r) r = w / 2;
+    if (h < 2 * r) r = h / 2;
+    c.beginPath();
+    c.moveTo(x + r, y);
+    c.arcTo(x + w, y, x + w, y + h, r);
+    c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r);
+    c.arcTo(x, y, x + w, y, r);
+    c.closePath();
+  }
+
+  function loop(ts) {
+    if (state !== STATE.PLAYING) return;
+    if (lastTime == null) lastTime = ts;
+    let dt = (ts - lastTime) / 1000;
+    lastTime = ts;
+    dt = Math.min(dt, 0.05); // clamp for tab-switch hiccups
+
+    update(dt);
+    if (state !== STATE.PLAYING) return; // may have ended this frame (death)
+
+    ctx.save();
+    if (shakeTime > 0) {
+      const s = shakeMag * (shakeTime / 0.3);
+      ctx.translate((Math.random() - 0.5) * s, (Math.random() - 0.5) * s);
+    }
+    drawBackground(dt);
+    drawTrail();
+    drawObstacles();
+    drawPowerups();
+    drawParticles();
+    drawPlayer();
+    drawActiveEffects();
+    ctx.restore();
+
+    rafId = requestAnimationFrame(loop);
+  }
+
+  function beginPlaying() {
+    resize();
+    resetGame();
+    state = STATE.PLAYING;
+    menuEl.classList.add('hidden');
+    tutorialEl.classList.add('hidden');
+    gameoverEl.classList.add('hidden');
+    hudEl.classList.remove('hidden');
+    scoreValueEl.textContent = '0';
+    comboWrapEl.classList.remove('show');
+    rafId = requestAnimationFrame(loop);
+  }
+
+  function handlePlayPressed() {
+    const seenTutorial = localStorage.getItem(TUT_KEY) === '1';
+    if (seenTutorial) {
+      beginPlaying();
+    } else {
+      state = STATE.TUTORIAL;
+      menuEl.classList.add('hidden');
+      tutorialEl.classList.remove('hidden');
+      tutorialEl.classList.add('fade');
+    }
+  }
+
+  function handleTutorialStart() {
+    localStorage.setItem(TUT_KEY, '1');
+    beginPlaying();
+  }
+
+  function goHome() {
+    state = STATE.MENU;
+    cancelAnimationFrame(rafId);
+    gameoverEl.classList.add('hidden');
+    tutorialEl.classList.add('hidden');
+    hudEl.classList.add('hidden');
+    menuEl.classList.remove('hidden');
+    menuBestEl.textContent = bestScore;
+    setMenuOrbColor(bestScore);
+    ctx.clearRect(0, 0, W, H);
+  }
+
+  // ---------- input ----------
+  // Every tap flips direction: 1st tap -> right, 2nd -> left, 3rd -> right...
+  // Spamming taps flips back and forth fast enough that the orb roughly holds its spot.
+  function toggleDirection() {
+    if (state !== STATE.PLAYING) return;
+    direction = direction > 0 ? -1 : 1;
+    playSfx('switchDir');
+  }
+
+  canvas.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    toggleDirection();
+  });
+  canvas.addEventListener('touchstart', () => {
+    toggleDirection();
+  }, { passive: true });
+
+  playBtn.addEventListener('click', handlePlayPressed);
+  tutStartBtn.addEventListener('click', handleTutorialStart);
+  retryBtn.addEventListener('click', beginPlaying); // retry always skips the tutorial
+  homeBtn.addEventListener('click', goHome);
+
+  // ---------- init ----------
+  loadBest();
+  ctx.clearRect(0, 0, W, H);
+})();
+</script>
+</body>
+</html>
